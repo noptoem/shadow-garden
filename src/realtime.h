@@ -1,6 +1,7 @@
 #pragma once
 
 // Defined before including GLEW to suppress deprecation messages on macOS
+#include "utils/sceneparser.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -12,6 +13,11 @@
 #include <QOpenGLWidget>
 #include <QTime>
 #include <QTimer>
+#include "shapes/Cube.h"
+#include "shapes/Sphere.h"
+#include "shapes/Cylinder.h"
+#include "shapes/Cone.h"
+
 
 class Realtime : public QOpenGLWidget
 {
@@ -37,6 +43,10 @@ private:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void timerEvent(QTimerEvent *event) override;
+    void initializeV(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type);
+    void bind(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type);
+    void setupViewMatrix();
+    void setupProjMatrix();
 
     // Tick Related Variables
     int m_timer;                                        // Stores timer which attempts to run ~60 times per second
@@ -49,4 +59,43 @@ private:
 
     // Device Correction Variables
     int m_devicePixelRatio;
+
+    // current shape data
+    std::vector<float> m_data;
+
+    // view and project
+    glm::mat4 m_view;
+    glm::mat4 m_view_inverse;
+    glm::mat4 m_proj;
+    float aspectRatio;
+
+    // shader ID
+    GLuint m_shader;
+
+    // RenderData
+    RenderData renderData;
+
+    // sphere
+    GLuint m_sphere_vbo; // Stores id of vbo
+    GLuint m_sphere_vao; // Stores id of vao
+    int m_sphereDataSize;
+    Sphere* m_sphere;
+
+    // cube
+    GLuint m_cube_vbo; // Stores id of vbo
+    GLuint m_cube_vao; // Stores id of vao
+    int m_cubeDataSize;
+    Cube* m_cube;
+
+    // cone
+    GLuint m_cone_vbo; // Stores id of vbo
+    GLuint m_cone_vao; // Stores id of vao
+    int m_coneDataSize;
+    Cone* m_cone;
+
+    // cylinder
+    GLuint m_cylinder_vbo; // Stores id of vbo
+    GLuint m_cylinder_vao; // Stores id of vao
+    int m_cylinderDataSize;
+    Cylinder* m_cylinder;
 };

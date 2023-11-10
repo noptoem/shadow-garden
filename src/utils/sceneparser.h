@@ -3,11 +3,18 @@
 #include "scenedata.h"
 #include <vector>
 #include <string>
+#include "utils/rgba.h"
 
 // Struct which contains data for a single primitive, to be used for rendering
 struct RenderShapeData {
     ScenePrimitive primitive;
     glm::mat4 ctm; // the cumulative transformation matrix
+    glm::mat4 ctm_inverse;
+
+    // for texture
+    int m_width = 0;
+    int m_height = 0;
+    RGBA* m_data;
 };
 
 // Struct which contains all the data needed to render a scene

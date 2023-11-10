@@ -5,6 +5,8 @@
 #include <QKeyEvent>
 #include <iostream>
 #include "settings.h"
+#include "utils/sceneparser.h"
+#include "utils/shaderloader.h"
 
 // ================== Project 5: Lights, Camera
 
@@ -23,6 +25,16 @@ Realtime::Realtime(QWidget *parent)
     m_keyMap[Qt::Key_Space]   = false;
 
     // If you must use this function, do not edit anything above this
+
+    // initilize shapes
+    m_cube = new Cube();
+    m_cube->updateParams(settings.shapeParameter1);
+    m_sphere = new Sphere();
+    m_sphere->updateParams(settings.shapeParameter1, settings.shapeParameter2);
+    m_cylinder = new Cylinder();
+    m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
+    m_cone = new Cone();
+    m_cone->updateParams(settings.shapeParameter1, settings.shapeParameter2);
 }
 
 void Realtime::finish() {
@@ -57,10 +69,123 @@ void Realtime::initializeGL() {
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
 
     // Students: anything requiring OpenGL calls when the program starts should be done here
+
+    m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
+
+    initializeV(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
+    initializeV(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
+    initializeV(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
+    initializeV(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
 }
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
+    bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
+    bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
+    bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
+
+    // use the shader
+    glUseProgram(m_shader);
+
+    // loop through the shapes
+    for (RenderShapeData& shape: renderData.shapes) {
+        // bind correct vao
+        switch(shape.primitive.type) {
+        case PrimitiveType::PRIMITIVE_CONE:
+            glBindVertexArray(m_cone_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_CYLINDER:
+            glBindVertexArray(m_cylinder_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_SPHERE:
+            glBindVertexArray(m_sphere_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_CUBE:
+            glBindVertexArray(m_cube_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_MESH:
+            //NYI
+            break;
+        }
+
+        // pass in m_model as a uniform into the shader program
+        GLuint model_location = glGetUniformLocation(m_shader, "model_matrix");
+        GLuint model_ti_location = glGetUniformLocation(m_shader, "model_matrix_transpose_inverse");
+
+        glm::mat3 model_ti = glm::transpose(shape.ctm_inverse);
+
+        glUniformMatrix4fv(model_location, 1, GL_FALSE, &shape.ctm[0][0]);
+        glUniformMatrix3fv(model_ti_location, 1, GL_FALSE, &model_ti[0][0]);
+
+        // pass in m_view and m_proj
+        GLuint view_location = glGetUniformLocation(m_shader, "view_matrix");
+        GLuint proj_location = glGetUniformLocation(m_shader, "proj_matrix");
+
+        glUniformMatrix4fv(view_location, 1, GL_FALSE, &m_view[0][0]);
+        glUniformMatrix4fv(proj_location, 1, GL_FALSE, &m_proj[0][0]);
+
+        // ambient
+        GLuint ka_location = glGetUniformLocation(m_shader, "ka");
+        glUniform1f(ka_location, renderData.globalData.ka);
+        GLuint cAmbient_location = glGetUniformLocation(m_shader, "cAmbient");
+        glUniform4fv(cAmbient_location, 1, &shape.primitive.material.cAmbient[0]);
+
+        // light
+        GLuint light_num_location = glGetUniformLocation(m_shader, "light_num");
+        glUniform1i(light_num_location, renderData.lights.size());
+        for (int i = 0; i < renderData.lights.size(); i++) {
+            GLuint light_dir_location = glGetUniformLocation(m_shader, ("light_dir[" + std::to_string(i) + "]").c_str());
+            glUniform3fv(light_dir_location, 1, &renderData.lights[i].dir[0]);
+            GLuint light_color_location = glGetUniformLocation(m_shader, ("light_color[" + std::to_string(i) + "]").c_str());
+            glUniform3fv(light_color_location, 1, &renderData.lights[i].color[0]);
+        }
+
+        // diffuse
+        GLuint kd_location = glGetUniformLocation(m_shader, "kd");
+        glUniform1f(kd_location, renderData.globalData.kd);
+        GLuint cDiffuse_location = glGetUniformLocation(m_shader, "cDiffuse");
+        glUniform4fv(cDiffuse_location, 1, &shape.primitive.material.cDiffuse[0]);
+
+        // specular
+        GLuint ks_location = glGetUniformLocation(m_shader, "ks");
+        glUniform1f(ks_location, renderData.globalData.ks);
+        GLuint shininess_location = glGetUniformLocation(m_shader, "shininess");
+        glUniform1f(shininess_location, shape.primitive.material.shininess);
+        GLuint cSpecular_location = glGetUniformLocation(m_shader, "cSpecular");
+        glUniform4fv(cSpecular_location, 1, &shape.primitive.material.cSpecular[0]);
+
+        // camera pos
+        glm::vec4 camera_pos = m_view_inverse * glm::vec4(glm::vec3(0.f), 1.f);
+        GLuint camera_pos_location = glGetUniformLocation(m_shader, "camera_pos");
+        glUniform4fv(camera_pos_location, 1, &camera_pos[0]);
+
+        // Draw Command
+        switch(shape.primitive.type) {
+        case PrimitiveType::PRIMITIVE_CONE:
+            glDrawArrays(GL_TRIANGLES, 0, m_coneDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_CYLINDER:
+            glDrawArrays(GL_TRIANGLES, 0, m_cylinderDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_SPHERE:
+            glDrawArrays(GL_TRIANGLES, 0, m_sphereDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_CUBE:
+            glDrawArrays(GL_TRIANGLES, 0, m_cubeDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_MESH:
+            //NYI
+            break;
+        }
+
+        // Unbind Vertex Array
+        glBindVertexArray(0);
+    }
+
+    glUseProgram(0);
 }
 
 void Realtime::resizeGL(int w, int h) {
@@ -68,18 +193,84 @@ void Realtime::resizeGL(int w, int h) {
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
 
     // Students: anything requiring OpenGL calls when the program starts should be done here
+    aspectRatio = float(w) / float(h);
 }
 
 void Realtime::sceneChanged() {
+    renderData.lights.clear();
+    bool success = SceneParser::parse(settings.sceneFilePath, renderData);
+
+    if (!success) {
+        std::cerr << "Error loading scene: \"" << settings.sceneFilePath << "\"" << std::endl;
+    }
+
+    setupViewMatrix();
+    setupProjMatrix();
 
     update(); // asks for a PaintGL() call to occur
 }
 
 void Realtime::settingsChanged() {
+    m_sphere->updateParams(settings.shapeParameter1, settings.shapeParameter2);
+    m_cube->updateParams(settings.shapeParameter1);
+    m_cone->updateParams(settings.shapeParameter1, settings.shapeParameter2);
+    m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
+
+    setupViewMatrix();
+    setupProjMatrix();
 
     update(); // asks for a PaintGL() call to occur
 }
 
+void Realtime::initializeV(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type) {
+    // Generate and bind VBO
+    glGenBuffers(1, &m_vbo);
+    glGenVertexArrays(1, &m_vao);
+
+    bind(m_vao, m_vbo, type);
+}
+
+void Realtime::bind(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type) {
+    // Generate data
+    switch(type) {
+    case PrimitiveType::PRIMITIVE_CONE:
+        m_data = m_cone->generateShape();
+        m_coneDataSize = m_data.size();
+        break;
+    case PrimitiveType::PRIMITIVE_CYLINDER:
+        m_data = m_cylinder->generateShape();
+        m_cylinderDataSize = m_data.size();
+        break;
+    case PrimitiveType::PRIMITIVE_SPHERE:
+        m_data = m_sphere->generateShape();
+        m_sphereDataSize = m_data.size();
+        break;
+    case PrimitiveType::PRIMITIVE_CUBE:
+        m_data = m_cube->generateShape();
+        m_cubeDataSize = m_data.size();
+        break;
+    case PrimitiveType::PRIMITIVE_MESH:
+        //NYI
+        break;
+    }
+
+    // Send data to VBO
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER,m_data.size() * sizeof(GLfloat),m_data.data(), GL_STATIC_DRAW);
+
+    glBindVertexArray(m_vao);
+
+    // Enable and define attribute 0 to store vertex positions
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
+
+    // Clean-up bindings
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+}
 // ================== Project 6: Action!
 
 void Realtime::keyPressEvent(QKeyEvent *event) {

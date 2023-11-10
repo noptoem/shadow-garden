@@ -41,13 +41,26 @@ add_executable(${PROJECT_NAME}
     src/utils/sceneparser.h
     src/utils/shaderloader.h
     src/utils/aspectratiowidget/aspectratiowidget.hpp
+    src/utils/rgba.h
+    src/utils/imagereader.h src/utils/imagereader.cpp
+
+    src/shapes/Cube.cpp
+    src/shapes/Sphere.cpp
+    src/shapes/Cylinder.cpp
+    src/shapes/Cone.cpp
+    src/shapes/Cube.h
+    src/shapes/Sphere.h
+    src/shapes/Cylinder.h
+    src/shapes/Cone.h
+    src/camera.cpp
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`
 add_subdirectory(glm)
 
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
-add_library(StaticGLEW STATIC glew/src/glew.c)
+add_library(StaticGLEW STATIC glew/src/glew.c
+)
 include_directories(${PROJECT_NAME} PRIVATE glew/include)
 
 # Specifies libraries to be linked (Qt components, glew, etc)
