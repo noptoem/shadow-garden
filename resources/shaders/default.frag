@@ -31,8 +31,14 @@ void main() {
     fragColor = ka * vec4(cAmbient);
 
     for (int i = 0; i < light_num; i++) {
-        float diffuse = min(max(dot(normalize(-light_dir[i]), world_space_normal), 0), 1);
-        float specular = pow(min(max(dot(vec4(reflect(normalize(light_dir[i]), world_space_normal), 0), normalize(camera_pos - world_space_pos)), 0), 1), shininess);
+        float diffuse = max(dot(normalize(-light_dir[i]), normalize(world_space_normal)), 0.f);
+        float specular;
+        if (shininess != 0) {
+            specular = pow(max(dot(vec4(reflect(normalize(light_dir[i]), normalize(world_space_normal)), 0.f), normalize(camera_pos - world_space_pos)), 0.f), shininess);
+        } else {
+            specular = 1.f;
+        }
+
         for (int j = 0; j < 3; j++) {
             // diffuse
             fragColor[j] += kd * diffuse * light_color[i][j] * cDiffuse[j];
@@ -42,5 +48,5 @@ void main() {
         }
 
     }
-//    fragColor = vec4(1);
+//    fragColor = vec4(world_space_normal, 1);
 }

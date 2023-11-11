@@ -42,6 +42,15 @@ void Realtime::finish() {
     this->makeCurrent();
 
     // Students: anything requiring OpenGL calls when the program exits should be done here
+    glDeleteProgram(m_shader);
+    glDeleteBuffers(1, &m_sphere_vbo);
+    glDeleteVertexArrays(1, &m_sphere_vao);
+    glDeleteBuffers(1, &m_cube_vbo);
+    glDeleteVertexArrays(1, &m_cube_vao);
+    glDeleteBuffers(1, &m_cone_vbo);
+    glDeleteVertexArrays(1, &m_cone_vao);
+    glDeleteBuffers(1, &m_cylinder_vbo);
+    glDeleteVertexArrays(1, &m_cylinder_vao);
 
     this->doneCurrent();
 }
