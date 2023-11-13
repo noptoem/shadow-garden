@@ -36,7 +36,11 @@ Run the program, open the specified `.json` file, follow the instructions to set
 |      Input: `directional_light_1.json`<br/>Output: `directional_light_1_near_far.png`<br/>Parameters: (**25**, **25**, **8**, **10**)      | ![](https://raw.githubusercontent.com/BrownCSCI1230/scenefiles/main/lights-camera/required_outputs/directional_light_1_near_far.png) | ![Place directional_light_1_near_far.png in student_outputs/lights-camera/required folder](student_outputs/lights-camera/required/directional_light_1_near_far.png) |
 
 ### Design Choices
+I have a shape directory to keep the class of each object. These object are the same as those from lab8. 
 
+I used the total of 4 vbos and vaos, one for each object. I create a bind function which is responsible for regenerating the shape and binding the vaos and vbos. (in realtime.cpp)
+
+I have a seperate camera.cpp files which is used for generating view and projection matrix.
 ### Collaboration/References
 
 ### Known Bugs

@@ -79,12 +79,12 @@ bool SceneParser::parse(std::string filepath, RenderData &renderData) {
 
     for (RenderShapeData &node : renderData.shapes) {
         node.ctm_inverse = glm::inverse(node.ctm);
-        if (node.primitive.material.textureMap.isUsed) {
-            ImageReader texture {QString::fromStdString(node.primitive.material.textureMap.filename)};
-            node.m_height = texture.m_height;
-            node.m_width = texture.m_width;
-            node.m_data = texture.m_data;
-        }
+//        if (node.primitive.material.textureMap.isUsed) {
+//            ImageReader texture {QString::fromStdString(node.primitive.material.textureMap.filename)};
+//            node.m_height = texture.m_height;
+//            node.m_width = texture.m_width;
+//            node.m_data = texture.m_data;
+//        }
     }
 
     return true;
