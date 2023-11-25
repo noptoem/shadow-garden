@@ -60,6 +60,7 @@ add_subdirectory(glm)
 
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
 add_library(StaticGLEW STATIC glew/src/glew.c
+
 )
 include_directories(${PROJECT_NAME} PRIVATE glew/include)
 
@@ -80,6 +81,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
     FILES
         resources/shaders/default.frag
         resources/shaders/default.vert
+        resources/shaders/texture.frag
+        resources/shaders/texture.vert
 )
 
 # GLEW: this provides support for Windows (including 64-bit)

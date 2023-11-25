@@ -47,6 +47,8 @@ private:
     void bind(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type);
     void setupViewMatrix();
     void setupProjMatrix();
+    void paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
+    void makeFBO();
 
     // Tick Related Variables
     int m_timer;                                        // Stores timer which attempts to run ~60 times per second
@@ -67,6 +69,7 @@ private:
     glm::mat4 m_view;
     glm::mat4 m_view_inverse;
     glm::mat4 m_proj;
+    float m_width;
     float aspectRatio;
 
     // shader ID
@@ -98,4 +101,16 @@ private:
     GLuint m_cylinder_vao; // Stores id of vao
     int m_cylinderDataSize;
     Cylinder* m_cylinder;
-};
+
+    // FBO
+    GLuint m_fbo;
+    GLuint m_fbo_texture;
+    GLuint m_fbo_renderbuffer;
+    GLuint m_texture_shader;
+    GLuint m_fullscreen_vbo;
+    GLuint m_fullscreen_vao;
+    GLuint m_defaultFBO;
+    int m_fbo_width;
+    int m_fbo_height;
+    int m_screen_width;
+    int m_screen_height;};

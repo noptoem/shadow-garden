@@ -60,6 +60,11 @@ void Realtime::initializeGL() {
 
     m_timer = startTimer(1000/60);
     m_elapsedTimer.start();
+    m_defaultFBO = 2;
+    m_screen_width = size().width() * m_devicePixelRatio;
+    m_screen_height = size().height() * m_devicePixelRatio;
+    m_fbo_width = m_screen_width;
+    m_fbo_height = m_screen_height;
 
     // Initializing GL.
     // GLEW (GL Extension Wrangler) provides access to OpenGL functions.
@@ -80,15 +85,67 @@ void Realtime::initializeGL() {
     // Students: anything requiring OpenGL calls when the program starts should be done here
 
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
+    m_texture_shader = ShaderLoader::createShaderProgram(":/resources/shaders/texture.vert", ":/resources/shaders/texture.frag");
 
     initializeV(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
     initializeV(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
     initializeV(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
     initializeV(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
+
+    glUseProgram(m_texture_shader);
+    GLuint texture_location = glGetUniformLocation(m_texture_shader, "texture_id");
+    glUniform1i(texture_location, 0);
+    glUseProgram(0);
+
+    std::vector<GLfloat> fullscreen_quad_data =
+        { //     POSITIONS    //
+         // lower triangle
+         -1.f ,  1.f, 0.0f,
+         0.f ,  1.f,
+
+         -1.f , -1.f, 0.0f,
+         0.f ,  0.f,
+
+         1.f , -1.f, 0.0f,
+         1.f ,  0.f,
+
+         // upper triangle
+         1.f ,  1.f, 0.0f,
+         1.f ,  1.f,
+
+         -1.f ,  1.f, 0.0f,
+         0.f ,  1.f,
+
+         1.f , -1.f, 0.0f,
+         1.f ,  0.f,
+         };
+
+    // Generate and bind a VBO and a VAO for a fullscreen quad
+    glGenBuffers(1, &m_fullscreen_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_fullscreen_vbo);
+    glBufferData(GL_ARRAY_BUFFER, fullscreen_quad_data.size()*sizeof(GLfloat), fullscreen_quad_data.data(), GL_STATIC_DRAW);
+    glGenVertexArrays(1, &m_fullscreen_vao);
+    glBindVertexArray(m_fullscreen_vao);
+
+    // modify the code below to add a second attribute to the vertex attribute array
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), nullptr);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
+
+    // Unbind the fullscreen quad's VBO and VAO
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    makeFBO();
 }
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glViewport(0, 0, m_fbo_width, m_fbo_height);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
@@ -150,6 +207,28 @@ void Realtime::paintGL() {
             glUniform3fv(light_dir_location, 1, &renderData.lights[i].dir[0]);
             GLuint light_color_location = glGetUniformLocation(m_shader, ("light_color[" + std::to_string(i) + "]").c_str());
             glUniform3fv(light_color_location, 1, &renderData.lights[i].color[0]);
+            GLuint light_type_location = glGetUniformLocation(m_shader, ("light_type[" + std::to_string(i) + "]").c_str());
+
+            switch(renderData.lights[i].type) {
+                case LightType::LIGHT_DIRECTIONAL:
+                    glUniform1i(light_type_location, 0);
+                    break;
+                case LightType::LIGHT_POINT:
+                    glUniform1i(light_type_location, 1);
+                    break;
+                case LightType::LIGHT_SPOT:
+                    glUniform1i(light_type_location, 2);
+                    break;
+            }
+
+            GLuint light_function_location = glGetUniformLocation(m_shader, ("light_function[" + std::to_string(i) + "]").c_str());
+            glUniform3fv(light_function_location, 1, &renderData.lights[i].function[0]);
+            GLuint light_pos_location = glGetUniformLocation(m_shader, ("light_pos[" + std::to_string(i) + "]").c_str());
+            glUniform3fv(light_pos_location, 1, &renderData.lights[i].pos[0]);
+            GLuint light_penumbra_location = glGetUniformLocation(m_shader, ("light_penumbra[" + std::to_string(i) + "]").c_str());
+            glUniform1f(light_penumbra_location, renderData.lights[i].penumbra);
+            GLuint light_angle_location = glGetUniformLocation(m_shader, ("light_angle[" + std::to_string(i) + "]").c_str());
+            glUniform1f(light_angle_location, renderData.lights[i].angle);
         }
 
         // diffuse
@@ -195,6 +274,18 @@ void Realtime::paintGL() {
     }
 
     glUseProgram(0);
+
+    // FBO
+
+    // Bind the default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+    glViewport(0, 0, 1.25 * m_screen_width, 1.25 * m_screen_height);
+
+    // Clear the color and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Call paintTexture to draw our FBO color attachment texture | Task 31: Set bool parameter to true
+    paintTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, settings.extraCredit1, settings.extraCredit2);
 }
 
 void Realtime::resizeGL(int w, int h) {
@@ -202,7 +293,19 @@ void Realtime::resizeGL(int w, int h) {
     glViewport(0, 0, size().width() * m_devicePixelRatio, size().height() * m_devicePixelRatio);
 
     // Students: anything requiring OpenGL calls when the program starts should be done here
+    m_width = float(w);
     aspectRatio = float(w) / float(h);
+
+    glDeleteTextures(1, &m_fbo_texture);
+    glDeleteRenderbuffers(1, &m_fbo_renderbuffer);
+    glDeleteFramebuffers(1, &m_fbo);
+
+    m_screen_width = size().width() * m_devicePixelRatio;
+    m_screen_height = size().height() * m_devicePixelRatio;
+    m_fbo_width = m_screen_width;
+    m_fbo_height = m_screen_height;
+    // Task 34: Regenerate your FBOs
+    makeFBO();
 }
 
 void Realtime::sceneChanged() {
@@ -282,6 +385,56 @@ void Realtime::bind(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type) {
 }
 // ================== Project 6: Action!
 
+void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen) {
+    glUseProgram(m_texture_shader);
+
+    GLuint perPixel_location = glGetUniformLocation(m_texture_shader, "perPixel");
+    glUniform1i(perPixel_location, perPixel);
+    GLuint kernelBased_location = glGetUniformLocation(m_texture_shader, "kernelBased");
+    glUniform1i(kernelBased_location, kernelBased);
+    GLuint grayScale_location = glGetUniformLocation(m_texture_shader, "grayScale");
+    glUniform1i(grayScale_location, grayScale);
+    GLuint sharphen_location = glGetUniformLocation(m_texture_shader, "sharphen");
+    glUniform1i(sharphen_location, sharphen);
+
+    glBindVertexArray(m_fullscreen_vao);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void Realtime::makeFBO(){
+    // Generate and bind an empty texture, set its min/mag filter interpolation, then unbind
+    glGenTextures(1, &m_fbo_texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_fbo_width , m_fbo_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Generate and bind a renderbuffer of the right size, set its format, then unbind
+    glGenRenderbuffers(1, &m_fbo_renderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_fbo_renderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    // Generate and bind an FBO
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+    // Add our texture as a color attachment, and our renderbuffer as a depth+stencil attachment, to our FBO
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fbo_texture, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
+
+    // Unbind the FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+}
+
 void Realtime::keyPressEvent(QKeyEvent *event) {
     m_keyMap[Qt::Key(event->key())] = true;
 }
@@ -312,7 +465,21 @@ void Realtime::mouseMoveEvent(QMouseEvent *event) {
         m_prev_mouse_pos = glm::vec2(posX, posY);
 
         // Use deltaX and deltaY here to rotate
+        float c = cos(float(deltaY) / m_width);
+        float s = sin(float(deltaY) / m_width / aspectRatio);
+        glm::vec3 u = glm::normalize(glm::cross(glm::vec3(renderData.cameraData.look), glm::vec3(renderData.cameraData.up)));
+        glm::mat3 rotateY = glm::mat3(c + pow(u.x, 2) * (1-c), u.x * u.y * (1-c) + u.z * s, u.x * u.z * (1-c) - u.y * s,
+                                      u.x * u.y * (1-c) - u.z * s, c + pow(u.y, 2) * (1-c), u.y * u.z * (1-c) + u.x * s,
+                                      u.x * u.z * (1-c) + u.y * s, u.y * u.z * (1-c) - u.x * s, c + pow(u.z, 2) * (1-c));
+        renderData.cameraData.look =  glm::vec4(rotateY * glm::vec3(renderData.cameraData.look), 0.f);
+        c = cos(float(deltaX) / m_width);
+        s = sin(float(deltaX) / m_width / aspectRatio);
+        glm::mat3 rotateX = glm::mat3(c, 0, -s,
+                                      0, 1, 0,
+                                      s, 0, c);
+        renderData.cameraData.look =  glm::vec4(rotateX * glm::vec3(renderData.cameraData.look), 0.f);
 
+        setupViewMatrix();
         update(); // asks for a PaintGL() call to occur
     }
 }
@@ -323,7 +490,28 @@ void Realtime::timerEvent(QTimerEvent *event) {
     m_elapsedTimer.restart();
 
     // Use deltaTime and m_keyMap here to move around
+    float move = deltaTime * 3;
+    glm::vec4 u = glm::vec4(glm::normalize(glm::cross(glm::vec3(renderData.cameraData.look), glm::vec3(renderData.cameraData.up))), 0);
+    if (m_keyMap[Qt::Key_W]) {
+        renderData.cameraData.pos += move * renderData.cameraData.look;
+    }
+    if (m_keyMap[Qt::Key_S]) {
+        renderData.cameraData.pos -= move * renderData.cameraData.look;
+    }
+    if (m_keyMap[Qt::Key_A]) {
+        renderData.cameraData.pos += move * u;
+    }
+    if (m_keyMap[Qt::Key_D]) {
+        renderData.cameraData.pos -= move * u;
+    }
+    if (m_keyMap[Qt::Key_Space]) {
+        renderData.cameraData.pos += move * glm::vec4(0.f, 1.f, 0.f, 0.f);
+    }
+    if (m_keyMap[Qt::Key_Control]) {
+        renderData.cameraData.pos -= move * glm::vec4(0.f, 1.f, 0.f, 0.f);
+    }
 
+    setupViewMatrix();
     update(); // asks for a PaintGL() call to occur
 }
 
