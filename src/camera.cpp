@@ -34,7 +34,7 @@ void Realtime::setupViewMatrix() {
 void Realtime::setupProjMatrix() {
     glm::mat4 remap = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -2, 0, 0, 0, -1, 1);
     glm::mat4 scale = glm::mat4(1);
-    scale[0][0] = 1/ (settings.farPlane * tan(renderData.cameraData.heightAngle * aspectRatio/ 2));
+    scale[0][0] = 1/ (aspectRatio * settings.farPlane * tan(renderData.cameraData.heightAngle/ 2));
     scale[1][1] = 1/ (settings.farPlane * tan(renderData.cameraData.heightAngle/ 2));
     scale[2][2] = 1/ settings.farPlane;
 
