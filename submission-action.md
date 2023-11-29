@@ -86,6 +86,10 @@ https://github.com/BrownCSCI1230/projects_realtime_template/assets/45575415/710f
 
 ##### Your Output
 
+
+https://github.com/BrownCSCI1230/projects-realtime-KPvivid/assets/31164128/dc564113-9393-47a8-bfc6-df233319e4b5
+
+
 <!---
 Paste your output on top of this comment!
 -->
@@ -99,6 +103,10 @@ _Instructions:_ Load `chess.json`. Take a look around!
 https://github.com/BrownCSCI1230/projects_realtime_template/assets/45575415/a14f4d32-88ee-4f5f-9843-74dd5c89b9dd
 
 ##### Your Output
+
+
+https://github.com/BrownCSCI1230/projects-realtime-KPvivid/assets/31164128/ec14af89-e3a2-4a67-96a2-cf5780d874e6
+
 
 <!---
 Paste your output on top of this comment!
