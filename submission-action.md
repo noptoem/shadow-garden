@@ -113,6 +113,10 @@ Paste your output on top of this comment!
 -->
 
 ### Design Choices
+I make an additional FBO file to contain function make FBO and paintTexture.
+
+I make additional texture.frag and texture.vert to use for texture implementation.
+
 
 ### Collaboration/References
 
