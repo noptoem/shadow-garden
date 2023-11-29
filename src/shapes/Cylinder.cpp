@@ -1,10 +1,12 @@
 #include "Cylinder.h"
 
 void Cylinder::updateParams(int param1, int param2) {
-    m_vertexData = std::vector<float>();
-    m_param1 = param1;
-    m_param2 = param2;
-    setVertexData();
+    if (m_param1 != param1 || m_param2 != param2) {
+        m_vertexData = std::vector<float>();
+        m_param1 = param1;
+        m_param2 = param2;
+        setVertexData();
+    }
 }
 
 void Cylinder::makeTileBase(glm::vec3 topLeft,

@@ -1,9 +1,11 @@
 #include "Cube.h"
 
 void Cube::updateParams(int param1) {
-    m_vertexData = std::vector<float>();
-    m_param1 = param1;
-    setVertexData();
+    if (m_param1 != param1) {
+        m_vertexData = std::vector<float>();
+        m_param1 = param1;
+        setVertexData();
+    }
 }
 
 void Cube::makeTile(glm::vec3 topLeft,
