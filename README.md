@@ -22,5 +22,5 @@ With this idea, we have three main portions of the work:
     - **Treetased** : Mainly work on the Shadow Mapping in terms of the cooperation with the code. The idea is laying down the backbone of the shadow algorithms based on the website in shadow mapping, then trying to find where the depth map and light space transformation could come into the place. If this process is unfinished, we could also make a more simple scene that ignore some notions or edge cases of the shapes.
 - A description of **how each feature will be implemented** + any **resources** that you think might come in handy (e.g. papers, tutorials, algorithms, data)
 	- https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping (For the Shadow Mapping)
-	- Assignment 6 and 7 in terms of GL Pipeline
+	- Assignment 5 and 6 in terms of GL Pipeline
 	- OpenGL Documentations
