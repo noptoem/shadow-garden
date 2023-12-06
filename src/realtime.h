@@ -47,6 +47,7 @@ private:
     void bind(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type);
     void setupViewMatrix();
     void setupProjMatrix();
+    void setTime();
     void paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
     void makeFBO();
     bool loadOBJ(

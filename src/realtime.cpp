@@ -319,6 +319,16 @@ void Realtime::resizeGL(int w, int h) {
     makeFBO();
 }
 
+void Realtime::setTime() {
+    float theta = glm::radians((float(settings.time) - 6.f) * 15.f);
+    float alpha = glm::radians(30.f);
+    for (int i = 0; i < std::size(renderData.lights); i++){
+        if (renderData.lights[i].type == LightType::LIGHT_DIRECTIONAL){
+            renderData.lights[i].dir = glm::vec4(-sin(theta) * sin(alpha), -sin(theta) * cos(alpha), cos(theta), 0.f);
+        }
+    }
+}
+
 void Realtime::sceneChanged() {
     renderData.lights.clear();
     bool success = SceneParser::parse(settings.sceneFilePath, renderData);
@@ -326,7 +336,7 @@ void Realtime::sceneChanged() {
     if (!success) {
         std::cerr << "Error loading scene: \"" << settings.sceneFilePath << "\"" << std::endl;
     }
-
+    setTime();
     setupViewMatrix();
     setupProjMatrix();
 
@@ -339,6 +349,7 @@ void Realtime::settingsChanged() {
     m_cone->updateParams(settings.shapeParameter1, settings.shapeParameter2);
     m_cylinder->updateParams(settings.shapeParameter1, settings.shapeParameter2);
 
+    setTime();
     setupViewMatrix();
     setupProjMatrix();
 

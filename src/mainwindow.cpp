@@ -45,6 +45,12 @@ void MainWindow::initialize() {
     QLabel *far_label = new QLabel(); // Far plane label
     far_label->setText("Far Plane:");
 
+    QLabel *t_label = new QLabel(); // time label
+    t_label->setText("Time");
+    t_label->setFont(font);
+    QLabel *time_label = new QLabel(); // time label
+    time_label->setText("time:");
+
 
 
     // Create checkbox for per-pixel filter
@@ -64,6 +70,9 @@ void MainWindow::initialize() {
     saveImage = new QPushButton();
     saveImage->setText(QStringLiteral("Save image"));
 
+    QGroupBox *t1Layout = new QGroupBox(); // time 1 alignment
+    QHBoxLayout *t1 = new QHBoxLayout();
+
     // Creates the boxes containing the parameter sliders and number boxes
     QGroupBox *p1Layout = new QGroupBox(); // horizonal slider 1 alignment
     QHBoxLayout *l1 = new QHBoxLayout();
@@ -71,6 +80,19 @@ void MainWindow::initialize() {
     QHBoxLayout *l2 = new QHBoxLayout();
 
     // Create slider controls to control parameters
+
+    t1Slider = new QSlider(Qt::Orientation::Horizontal); // time 1 slider
+    t1Slider->setTickInterval(1);
+    t1Slider->setMinimum(0);
+    t1Slider->setMaximum(2400);
+    t1Slider->setValue(1100);
+
+    t1Box = new QDoubleSpinBox();
+    t1Box->setMinimum(0.f);
+    t1Box->setMaximum(24.f);
+    t1Box->setSingleStep(0.01f);
+    t1Box->setValue(11.f);
+
     p1Slider = new QSlider(Qt::Orientation::Horizontal); // Parameter 1 slider
     p1Slider->setTickInterval(1);
     p1Slider->setMinimum(1);
@@ -96,6 +118,10 @@ void MainWindow::initialize() {
     p2Box->setValue(1);
 
     // Adds the slider and number box to the parameter layouts
+    t1->addWidget(t1Slider);
+    t1->addWidget(t1Box);
+    t1Layout->setLayout(t1);
+
     l1->addWidget(p1Slider);
     l1->addWidget(p1Box);
     p1Layout->setLayout(l1);
@@ -173,6 +199,9 @@ void MainWindow::initialize() {
     vLayout->addWidget(nearLayout);
     vLayout->addWidget(far_label);
     vLayout->addWidget(farLayout);
+    vLayout->addWidget(t_label);
+    vLayout->addWidget(time_label);
+    vLayout->addWidget(t1Layout);
     vLayout->addWidget(filters_label);
     vLayout->addWidget(filter1);
     vLayout->addWidget(filter2);
@@ -208,6 +237,7 @@ void MainWindow::connectUIElements() {
     connectParam2();
     connectNear();
     connectFar();
+    connectT();
     connectExtraCredit();
 }
 
@@ -249,6 +279,12 @@ void MainWindow::connectFar() {
     connect(farSlider, &QSlider::valueChanged, this, &MainWindow::onValChangeFarSlider);
     connect(farBox, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
             this, &MainWindow::onValChangeFarBox);
+}
+
+void MainWindow::connectT() {
+    connect(t1Slider, &QSlider::valueChanged, this, &MainWindow::onValChangeTSlider);
+    connect(t1Box, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+            this, &MainWindow::onValChangeTBox);
 }
 
 void MainWindow::connectExtraCredit() {
@@ -350,6 +386,20 @@ void MainWindow::onValChangeFarBox(double newValue) {
     farSlider->setValue(int(newValue*100.f));
     //farBox->setValue(newValue);
     settings.farPlane = farBox->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeTSlider(int newValue) {
+    //    t1Slider->setValue(newValue);
+    t1Box->setValue(newValue/100.f);
+    settings.time = t1Box->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeTBox(double newValue) {
+    t1Slider->setValue(int(newValue*100.f));
+    //    t1Box->setValue(newValue);
+    settings.time = t1Box->value();
     realtime->settingsChanged();
 }
 
