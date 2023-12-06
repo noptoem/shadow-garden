@@ -29,6 +29,7 @@ private:
     void connectSaveImage();
     void connectExtraCredit();
     void connectT();
+    void connectTimeBox();
 
     Realtime *realtime;
     AspectRatioWidget *aspectRatioWidget;
@@ -46,6 +47,7 @@ private:
     QDoubleSpinBox *farBox;
     QSlider *t1Slider;
     QDoubleSpinBox *t1Box;
+    QCheckBox *tb1;
 
     // Extra Credit:
     QCheckBox *ec1;
@@ -66,6 +68,7 @@ private slots:
     void onValChangeFarBox(double newValue);
     void onValChangeTSlider(int newValue);
     void onValChangeTBox(double newValue);
+    void onTimeBox();
 
     // Extra Credit:
     void onExtraCredit1();

@@ -44,7 +44,6 @@ void MainWindow::initialize() {
     near_label->setText("Near Plane:");
     QLabel *far_label = new QLabel(); // Far plane label
     far_label->setText("Far Plane:");
-
     QLabel *t_label = new QLabel(); // time label
     t_label->setText("Time");
     t_label->setFont(font);
@@ -54,6 +53,10 @@ void MainWindow::initialize() {
 
 
     // Create checkbox for per-pixel filter
+    tb1 = new QCheckBox();
+    tb1->setText(QStringLiteral("day-night cycle"));
+    tb1->setChecked(false);
+
     filter1 = new QCheckBox();
     filter1->setText(QStringLiteral("Per-Pixel Filter"));
     filter1->setChecked(false);
@@ -202,6 +205,7 @@ void MainWindow::initialize() {
     vLayout->addWidget(t_label);
     vLayout->addWidget(time_label);
     vLayout->addWidget(t1Layout);
+    vLayout->addWidget(tb1);
     vLayout->addWidget(filters_label);
     vLayout->addWidget(filter1);
     vLayout->addWidget(filter2);
@@ -237,8 +241,15 @@ void MainWindow::connectUIElements() {
     connectParam2();
     connectNear();
     connectFar();
+//    onValChangeTBox(settings.time);
+//    onValChangeTSlider(int(settings.time * 100));
     connectT();
+    connectTimeBox();
     connectExtraCredit();
+}
+
+void MainWindow::connectTimeBox() {
+    connect(tb1, &QCheckBox::clicked, this, &MainWindow::onTimeBox);
 }
 
 void MainWindow::connectPerPixelFilter() {
@@ -292,6 +303,11 @@ void MainWindow::connectExtraCredit() {
     connect(ec2, &QCheckBox::clicked, this, &MainWindow::onExtraCredit2);
     connect(ec3, &QCheckBox::clicked, this, &MainWindow::onExtraCredit3);
     connect(ec4, &QCheckBox::clicked, this, &MainWindow::onExtraCredit4);
+}
+
+void MainWindow::onTimeBox() {
+    settings.tb = !settings.tb;
+    realtime->settingsChanged();
 }
 
 void MainWindow::onPerPixelFilter() {

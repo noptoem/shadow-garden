@@ -1,7 +1,6 @@
 #include "realtime.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tinyobjloader/tiny_obj_loader.h"
-
 #include <QCoreApplication>
 #include <QMouseEvent>
 #include <QKeyEvent>
@@ -555,7 +554,16 @@ void Realtime::timerEvent(QTimerEvent *event) {
     if (m_keyMap[Qt::Key_Control]) {
         renderData.cameraData.pos -= move * glm::vec4(0.f, 1.f, 0.f, 0.f);
     }
+    if (settings.tb){
 
+        if (settings.time + deltaTime >= 24.f){
+            settings.time = settings.time + deltaTime - 24.f;
+        } else {
+            settings.time = settings.time + deltaTime;
+        }
+    }
+
+    setTime();
     setupViewMatrix();
     update(); // asks for a PaintGL() call to occur
 }
