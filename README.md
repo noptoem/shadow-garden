@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # shadow-garden
 CSCI 1230 Final Projects 
 
@@ -24,3 +25,8 @@ With this idea, we have three main portions of the work:
 	- https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping (For the Shadow Mapping)
 	- Assignment 5 and 6 in terms of GL Pipeline
 	- OpenGL Documentations
+=======
+# Projects 5 & 6: Lights, Camera & Action!
+
+All project handouts can be found [here](https://cs1230.graphics/projects).
+>>>>>>> f0d5f9b67fe8a389e936c08eac501511b13da717
