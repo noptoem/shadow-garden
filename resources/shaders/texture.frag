@@ -2,17 +2,39 @@
 
 // Task 16: Create a UV coordinate in variable
 in vec2 uv;
+in vec4 fragPosLightSpace;
 
 // Task 8: Add a sampler2D uniform
 uniform sampler2D texture_id;
+uniform sampler2D shadowMap;
 
 // Task 29: Add a bool on whether or not to filter the texture
 uniform bool perPixel;
 uniform bool kernelBased;
 uniform bool grayScale;
 uniform bool sharphen;
+uniform bool shadowAvail;
 
 out vec4 fragColor;
+
+uniform float near;
+uniform float far;
+
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, uv).r;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+    return shadow;
+}
 
 void main()
 {
@@ -60,5 +82,10 @@ void main()
     // Invert fragColor's r, g, and b color channels if your bool is true
     if (perPixel) {
         fragColor = vec4(1) - fragColor;
+    }
+
+    if (shadowAvail) {
+        float shadow = ShadowCalculation(fragPosLightSpace);
+        fragColor = vec4(vec3(fragColor * shadow), 1.0);
     }
 }

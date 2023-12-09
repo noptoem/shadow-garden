@@ -5,7 +5,7 @@
 #include <QKeyEvent>
 #include <iostream>
 
-void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen) {
+void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen, bool shadowAvail) {
     glUseProgram(m_texture_shader);
 
     GLuint perPixel_location = glGetUniformLocation(m_texture_shader, "perPixel");
@@ -16,6 +16,8 @@ void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, boo
     glUniform1i(grayScale_location, grayScale);
     GLuint sharphen_location = glGetUniformLocation(m_texture_shader, "sharphen");
     glUniform1i(sharphen_location, sharphen);
+    GLuint shadow_location = glGetUniformLocation(m_texture_shader, "shadowAvail");
+    glUniform1i(shadow_location, shadowAvail);
 
     glBindVertexArray(m_fullscreen_vao);
     glActiveTexture(GL_TEXTURE0);
@@ -53,4 +55,26 @@ void Realtime::makeFBO(){
 
     // Unbind the FBO
     glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+}
+
+void Realtime::createDepthMap() {
+    // Gen buffers
+    glGenFramebuffers(1, &depthMapFBO);
+
+    // create a 2D texture that we'll use as the framebuffer's depth buffe
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                 m_shadow_width, m_shadow_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // attach it as the framebuffer's depth buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 1);
 }

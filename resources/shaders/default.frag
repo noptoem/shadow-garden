@@ -12,9 +12,9 @@ uniform vec4 cAmbient;
 
 // light
 uniform int light_num;
+uniform int light_type[8];
 uniform vec3 light_dir[8];
 uniform vec3 light_color[8];
-uniform int light_type[8];
 uniform vec3 light_function[8];
 uniform vec3 light_pos[8];
 uniform float light_penumbra[8];
@@ -29,6 +29,7 @@ uniform float ks;
 uniform vec4 cSpecular;
 uniform float shininess;
 
+// plane
 uniform vec4 camera_pos;
 
 void main() {

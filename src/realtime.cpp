@@ -86,6 +86,7 @@ void Realtime::initializeGL() {
 
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_texture_shader = ShaderLoader::createShaderProgram(":/resources/shaders/texture.vert", ":/resources/shaders/texture.frag");
+    m_shadow_shader = ShaderLoader::createShaderProgram(":/resources/shaders/shadow.vert", ":/resources/shaders/shadow.frag");
 
     initializeV(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
     initializeV(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
@@ -95,6 +96,8 @@ void Realtime::initializeGL() {
     glUseProgram(m_texture_shader);
     GLuint texture_location = glGetUniformLocation(m_texture_shader, "texture_id");
     glUniform1i(texture_location, 0);
+    GLuint shadowMap_location = glGetUniformLocation(m_texture_shader, "shadowMap");
+    glUniform1i(shadowMap_location, 1);
     glUseProgram(0);
 
     std::vector<GLfloat> fullscreen_quad_data =
@@ -138,16 +141,25 @@ void Realtime::initializeGL() {
     glBindVertexArray(0);
 
     makeFBO();
+//    createDepthMap();
+//    glUseProgram(m_shadow_shader);
+//    GLuint depth_location = glGetUniformLocation(m_shadow_shader, "depthMap");
+//    glUniform1i(depth_location, 1);
+//    glUseProgram(0);
 }
 
 void Realtime::paintGL() {
+//    glViewport(0, 0, m_shadow_width, m_shadow_height);
+//    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+//    glClear(GL_DEPTH_BUFFER_BIT);
+//    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     // Students: anything requiring OpenGL calls every frame should be done here
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glViewport(0, 0, m_fbo_width, m_fbo_height);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
     bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
     bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
@@ -274,6 +286,14 @@ void Realtime::paintGL() {
     }
 
     glUseProgram(0);
+    // ConfigureShaderAndMatrices();
+    glUseProgram(m_shadow_shader);
+    GLuint near_location = glGetUniformLocation(m_shadow_shader, "near_plane");
+    glUniform1f(near_location, settings.nearPlane);
+    GLuint far_location = glGetUniformLocation(m_shadow_shader, "far_plane");
+    glUniform1f(far_location, settings.farPlane);
+    glUseProgram(0);
+
 
     // FBO
 
@@ -285,7 +305,7 @@ void Realtime::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Call paintTexture to draw our FBO color attachment texture | Task 31: Set bool parameter to true
-    paintTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, settings.extraCredit1, settings.extraCredit2);
+    paintTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, settings.extraCredit1, settings.extraCredit2, settings.extraCredit3);
 }
 
 void Realtime::resizeGL(int w, int h) {

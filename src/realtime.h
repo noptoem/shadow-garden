@@ -7,6 +7,7 @@
 #endif
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <unordered_map>
 #include <QElapsedTimer>
@@ -47,8 +48,10 @@ private:
     void bind(GLuint& m_vao, GLuint& m_vbo, PrimitiveType type);
     void setupViewMatrix();
     void setupProjMatrix();
-    void paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
+    void paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen, bool shadowAvail);
     void makeFBO();
+    void createDepthMap();
+    void ConfigureShaderAndMatrices();
 
     // Tick Related Variables
     int m_timer;                                        // Stores timer which attempts to run ~60 times per second
@@ -106,11 +109,17 @@ private:
     GLuint m_fbo;
     GLuint m_fbo_texture;
     GLuint m_fbo_renderbuffer;
+    GLuint m_fbo_depthmap;
     GLuint m_texture_shader;
+    GLuint m_shadow_shader;
     GLuint m_fullscreen_vbo;
     GLuint m_fullscreen_vao;
     GLuint m_defaultFBO;
+    GLuint depthMapFBO;
+    GLuint depthMap;
     int m_fbo_width;
     int m_fbo_height;
     int m_screen_width;
-    int m_screen_height;};
+    int m_screen_height;
+    int m_shadow_width = 1024;
+    int m_shadow_height = 1024;};
