@@ -5,7 +5,11 @@
 #include <QKeyEvent>
 #include <iostream>
 
-void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen) {
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+void Realtime::paintTexture(GLuint texture, GLuint shadowMap, bool perPixel, bool kernelBased, bool grayScale, bool sharphen) {
     glUseProgram(m_texture_shader);
 
     GLuint perPixel_location = glGetUniformLocation(m_texture_shader, "perPixel");
@@ -20,11 +24,28 @@ void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, boo
     glBindVertexArray(m_fullscreen_vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, shadowMap);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindVertexArray(0);
     glUseProgram(0);
+}
+
+void Realtime::paintShadow(float near_plane, float far_plane) {
+    glUseProgram(m_shadow_shader);
+    glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+    glm::mat4 lightProjection, lightView;
+    glm::mat4 lightSpaceMatrix;
+    lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+    lightSpaceMatrix = lightProjection * lightView;
+    GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
+    glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+    glUseProgram(0);
+
+    renderScene();
 }
 
 void Realtime::makeFBO(){
@@ -52,5 +73,25 @@ void Realtime::makeFBO(){
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
 
     // Unbind the FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Realtime::makeDepthMap(){
+    // Making the binding on  the depthMap
+    glGenTextures(1, &depthMap);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_shadow_width, m_shadow_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    // attach depth texture as FBO's depth buffer
+    glGenFramebuffers(1, &depthMapFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
 }

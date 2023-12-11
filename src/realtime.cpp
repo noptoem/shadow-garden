@@ -90,6 +90,8 @@ void Realtime::initializeGL() {
 
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_texture_shader = ShaderLoader::createShaderProgram(":/resources/shaders/texture.vert", ":/resources/shaders/texture.frag");
+    // m_debug_shader = ShaderLoader::createShaderProgram(":/resources/shaders/debug_quad.vert", ":/resources/shaders/debug_quad.frag");
+    m_shadow_shader = ShaderLoader::createShaderProgram(":/resources/shaders/simple_depth.vert", ":/resources/shaders/simple_depth.frag");
 
     initializeV(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
     initializeV(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
@@ -97,10 +99,16 @@ void Realtime::initializeGL() {
     initializeV(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
     glGenBuffers(1, &m_mesh_vbo);
     glGenVertexArrays(1, &m_mesh_vao);
-    \
+    makeDepthMap();
+
     glUseProgram(m_texture_shader);
     GLuint texture_location = glGetUniformLocation(m_texture_shader, "texture_id");
     glUniform1i(texture_location, 0);
+    glUseProgram(0);
+
+    glUseProgram(m_shader);
+    GLuint shader_location = glGetUniformLocation(m_shader, "shadowMap");
+    glUniform1i(shader_location, 1);
     glUseProgram(0);
 
     std::vector<GLfloat> fullscreen_quad_data =
@@ -146,19 +154,7 @@ void Realtime::initializeGL() {
     makeFBO();
 }
 
-void Realtime::paintGL() {
-    // Students: anything requiring OpenGL calls every frame should be done here
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-    glViewport(0, 0, m_fbo_width, m_fbo_height);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
-    bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
-    bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
-    bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
-
+void Realtime::renderScene(){
     // use the shader
     glUseProgram(m_shader);
 
@@ -208,6 +204,8 @@ void Realtime::paintGL() {
         glUniform1f(ka_location, renderData.globalData.ka);
         GLuint cAmbient_location = glGetUniformLocation(m_shader, "cAmbient");
         glUniform4fv(cAmbient_location, 1, &shape.primitive.material.cAmbient[0]);
+        GLuint shadow_location = glGetUniformLocation(m_shader, "shadowEnabled");
+        glUniform1i(shadow_location, settings.extraCredit3);
 
         // light
         GLuint light_num_location = glGetUniformLocation(m_shader, "light_num");
@@ -220,15 +218,15 @@ void Realtime::paintGL() {
             GLuint light_type_location = glGetUniformLocation(m_shader, ("light_type[" + std::to_string(i) + "]").c_str());
 
             switch(renderData.lights[i].type) {
-                case LightType::LIGHT_DIRECTIONAL:
-                    glUniform1i(light_type_location, 0);
-                    break;
-                case LightType::LIGHT_POINT:
-                    glUniform1i(light_type_location, 1);
-                    break;
-                case LightType::LIGHT_SPOT:
-                    glUniform1i(light_type_location, 2);
-                    break;
+            case LightType::LIGHT_DIRECTIONAL:
+                glUniform1i(light_type_location, 0);
+                break;
+            case LightType::LIGHT_POINT:
+                glUniform1i(light_type_location, 1);
+                break;
+            case LightType::LIGHT_SPOT:
+                glUniform1i(light_type_location, 2);
+                break;
             }
 
             GLuint light_function_location = glGetUniformLocation(m_shader, ("light_function[" + std::to_string(i) + "]").c_str());
@@ -284,7 +282,28 @@ void Realtime::paintGL() {
     }
 
     glUseProgram(0);
+}
 
+void Realtime::paintGL() {
+    // Students: anything requiring OpenGL calls every frame should be done here
+    glViewport(0, 0, m_shadow_width, m_shadow_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    paintShadow(settings.nearPlane, settings.farPlane);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glViewport(0, 0, m_fbo_width, m_fbo_height);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
+    bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
+    bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
+    bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
+
+    renderScene();
     // FBO
 
     // Bind the default framebuffer
@@ -295,7 +314,7 @@ void Realtime::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Call paintTexture to draw our FBO color attachment texture | Task 31: Set bool parameter to true
-    paintTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, settings.extraCredit1, settings.extraCredit2);
+    paintTexture(m_fbo_texture, depthMap, settings.perPixelFilter, settings.kernelBasedFilter, settings.extraCredit1, settings.extraCredit2);
 }
 
 void Realtime::resizeGL(int w, int h) {
@@ -478,6 +497,7 @@ bool Realtime::loadOBJ(
             shapes[s].mesh.material_ids[f];
         }
     }
+    return true;
 }
 void Realtime::keyPressEvent(QKeyEvent *event) {
     m_keyMap[Qt::Key(event->key())] = true;

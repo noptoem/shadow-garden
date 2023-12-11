@@ -48,8 +48,11 @@ private:
     void setupViewMatrix();
     void setupProjMatrix();
     void setTime();
-    void paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
+    void paintTexture(GLuint texture, GLuint shadowMap, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
     void makeFBO();
+    void makeDepthMap();
+    void renderScene();
+    void paintShadow(float near_plane, float far_plane);
     bool loadOBJ(
         const char * path,
         std::vector < float > & out_array);
@@ -116,10 +119,21 @@ private:
     GLuint m_fbo_texture;
     GLuint m_fbo_renderbuffer;
     GLuint m_texture_shader;
+    GLuint m_debug_shader;
+    GLuint m_shadow_shader;
     GLuint m_fullscreen_vbo;
     GLuint m_fullscreen_vao;
     GLuint m_defaultFBO;
     int m_fbo_width;
     int m_fbo_height;
     int m_screen_width;
-    int m_screen_height;};
+    int m_screen_height;
+
+    // Shadow
+    const unsigned int m_shadow_width = 1024;
+    const unsigned int m_shadow_height = 1024;
+    GLuint depthMapFBO;
+    GLuint depthMap;
+
+};
+

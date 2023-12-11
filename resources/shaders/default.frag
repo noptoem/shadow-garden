@@ -2,6 +2,7 @@
 // output
 in vec4 world_space_pos;
 in vec3 world_space_normal;
+in vec4 fragLight;
 
 // output
 out vec4 fragColor;
@@ -29,7 +30,28 @@ uniform float ks;
 uniform vec4 cSpecular;
 uniform float shininess;
 
+// camera
 uniform vec4 camera_pos;
+
+// shadow mapping
+uniform sampler2D shadowMap;
+uniform bool shadowEnabled;
+
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r; ;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+
+    return shadow;
+}
 
 void main() {
     // ambient
@@ -38,19 +60,21 @@ void main() {
     for (int i = 0; i < light_num; i++) {
         vec3 normal = normalize(world_space_normal);
         float distance = distance(light_pos[i], vec3(world_space_pos));
-        float attentuate = min(1.0f, float(1.0f/(light_function[i][0] + (light_function[i][1] * distance) + light_function[i][2] * pow(distance, 2.f))));
+        float attentuate = min(1.0f, float(1.0f/(light_function[i][0] + (light_function[i][1] * distance) +
+                               light_function[i][2] * pow(distance, 2.f))));
         vec3 L = normalize(light_pos[i] - vec3(world_space_pos));
         vec3 subnormal = dot(normal, L) * normal;
         vec3 R = normalize(2.f*subnormal - L) ;
         float specular, diffuse;
+        float shadow = (shadowEnabled) ? ShadowCalculation(fragLight) : 0.0;
 
         switch(light_type[i]) {
         case 0:
-            diffuse = max(dot(normalize(-light_dir[i]), normal), 0.f);
+            diffuse = max(dot(normalize(-light_dir[i]), normal), 0.f) * (1.0 - shadow);
             if (shininess != 0) {
-                specular = pow(max(dot(vec4(reflect(normalize(light_dir[i]), normal), 0.f), normalize(camera_pos - world_space_pos)), 0.f), shininess);
+                specular = pow(max(dot(vec4(reflect(normalize(light_dir[i]), normal), 0.f), normalize(camera_pos - world_space_pos)), 0.f), shininess) * (1.0 - shadow);
             } else {
-                specular = 1.f;
+                specular = (1.0 - shadow);
             }
 
             for (int j = 0; j < 3; j++) {
@@ -62,11 +86,11 @@ void main() {
             }
             break;
         case 1:
-            diffuse = max(0.f, dot(normal, L));
+            diffuse = max(0.f, dot(normal, L)) * (1.0 - shadow);
             if (shininess != 0) {
-                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess);
+                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess) * (1.0 - shadow);
             } else {
-                specular = 1.f;
+                specular = (1.0 - shadow);
             }
 
             for (int j = 0; j < 3; j++) {
@@ -80,11 +104,11 @@ void main() {
         case 2:
             vec3 light_to_pos = light_pos[i] - vec3(world_space_pos);
             float angle = acos(length(dot(light_to_pos, vec3(light_dir[i])) * vec3(light_dir[i])) / length(light_to_pos) / pow(length(light_dir[i]), 2));
-            diffuse = max(0.f, dot(normal, L));
+            diffuse = max(0.f, dot(normal, L)) * (1.0 - shadow);
             if (shininess != 0) {
-                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess);
+                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess) * (1.0 - shadow);
             } else {
-                specular = 1.f;
+                specular = (1.0 - shadow);
             }
             float falloff = 1.f;
             if (angle <= light_angle[i] - light_penumbra[i]) {
@@ -104,7 +128,4 @@ void main() {
             break;
         }
     }
-
-
-//    fragColor = vec4(world_space_normal, 1);
 }
