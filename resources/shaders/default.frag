@@ -44,11 +44,11 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
     // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    float closestDepth = texture(shadowMap, projCoords.xy).r; // Issue : shadowMap is zero-texture
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+    float shadow = currentDepth >= closestDepth ? 1.0 : 0.0;
 
     return shadow;
 }
@@ -86,11 +86,9 @@ void main() {
             }
             break;
         case 1:
-            diffuse = max(0.f, dot(normal, L)) * (1.0 - shadow);
+            diffuse = max(0.f, dot(normal, L));
             if (shininess != 0) {
-                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess) * (1.0 - shadow);
-            } else {
-                specular = (1.0 - shadow);
+                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess);
             }
 
             for (int j = 0; j < 3; j++) {
@@ -104,11 +102,9 @@ void main() {
         case 2:
             vec3 light_to_pos = light_pos[i] - vec3(world_space_pos);
             float angle = acos(length(dot(light_to_pos, vec3(light_dir[i])) * vec3(light_dir[i])) / length(light_to_pos) / pow(length(light_dir[i]), 2));
-            diffuse = max(0.f, dot(normal, L)) * (1.0 - shadow);
+            diffuse = max(0.f, dot(normal, L));
             if (shininess != 0) {
-                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess) * (1.0 - shadow);
-            } else {
-                specular = (1.0 - shadow);
+                specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess);
             }
             float falloff = 1.f;
             if (angle <= light_angle[i] - light_penumbra[i]) {

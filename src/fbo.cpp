@@ -33,28 +33,6 @@ void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, boo
     glUseProgram(0);
 }
 
-void Realtime::paintShadow(float near_plane, float far_plane) {
-    glUseProgram(m_shader);
-    glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
-    glm::mat4 lightProjection, lightView;
-    glm::mat4 lightSpaceMatrix;
-    lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-    lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-    lightSpaceMatrix = lightProjection * lightView;
-    GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpacemat");
-    glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
-    glUseProgram(0);
-
-    glBindVertexArray(m_fullscreen_vao);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
-}
-
 void Realtime::makeFBO(){
     // Generate and bind an empty texture, set its min/mag filter interpolation, then unbind
     glGenTextures(1, &m_fbo_texture);
@@ -90,11 +68,9 @@ void Realtime::makeDepthMap(){
     glBindTexture(GL_TEXTURE_2D, depthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_shadow_width, m_shadow_height, 0,
                  GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    float borderColor[] = {1.f, 1.f, 1.f, 1.f};
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     // attach depth texture as FBO's depth buffer

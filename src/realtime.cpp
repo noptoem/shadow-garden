@@ -49,6 +49,7 @@ void Realtime::finish() {
 
     // Students: anything requiring OpenGL calls when the program exits should be done here
     glDeleteProgram(m_shader);
+    glDeleteProgram(m_shadow_shader);
     glDeleteBuffers(1, &m_sphere_vbo);
     glDeleteVertexArrays(1, &m_sphere_vao);
     glDeleteBuffers(1, &m_cube_vbo);
@@ -68,7 +69,7 @@ void Realtime::initializeGL() {
 
     m_timer = startTimer(1000/60);
     m_elapsedTimer.start();
-    m_defaultFBO = 2;
+    m_defaultFBO = 3;
     m_screen_width = size().width() * m_devicePixelRatio;
     m_screen_height = size().height() * m_devicePixelRatio;
     m_fbo_width = m_screen_width;
@@ -105,12 +106,11 @@ void Realtime::initializeGL() {
 
     glUseProgram(m_texture_shader);
     GLuint texture_location = glGetUniformLocation(m_texture_shader, "texture_id");
-    glUniform1i(texture_location, 0);
-    glUseProgram(0);
+    glUniform1i(texture_location, static_cast<int>(0));
 
     glUseProgram(m_shader);
-    GLuint shader_location = glGetUniformLocation(m_shader, "shadowMap");
-    glUniform1i(shader_location, 1);
+    GLuint shad_location = glGetUniformLocation(m_shader, "shadowMap");
+    glUniform1i(shad_location, 1);
     glUseProgram(0);
 
     std::vector<GLfloat> fullscreen_quad_data =
@@ -153,8 +153,90 @@ void Realtime::initializeGL() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    makeFBO();
     makeDepthMap();
+    makeFBO();
+}
+
+void Realtime::paintShadow(float near_plane, float far_plane) {
+    glUseProgram(m_shadow_shader);
+
+    glm::mat4 lightProjection, lightView;
+    glm::mat4 lightSpaceMatrix;
+    lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    // SceneLightData light = renderData.lights.at(0);
+    glm::vec3 new_dir = glm::vec3(-2.0f, 4.0f, -1.0f);
+    lightView = setupLightViewMatrix(new_dir, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+    lightSpaceMatrix = lightProjection * lightView;
+    GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
+    glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+
+    glViewport(0, 0, m_shadow_width, m_shadow_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
+
+    bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
+    bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
+    bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
+    bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
+
+    for (RenderShapeData& shape: renderData.shapes) {
+        switch(shape.primitive.type) {
+        case PrimitiveType::PRIMITIVE_CONE:
+            glBindVertexArray(m_cone_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_CYLINDER:
+            glBindVertexArray(m_cylinder_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_SPHERE:
+            glBindVertexArray(m_sphere_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_CUBE:
+            glBindVertexArray(m_cube_vao);
+            break;
+        case PrimitiveType::PRIMITIVE_MESH:
+            loadOBJ(shape.primitive.meshfile.c_str(), m_data);
+            m_meshDataSize = m_data.size();
+            bind(m_mesh_vao, m_mesh_vbo, PrimitiveType::PRIMITIVE_MESH);
+            glBindVertexArray(m_mesh_vao);
+            //NYI
+            break;
+        }
+
+        GLuint model_location = glGetUniformLocation(m_shadow_shader, "model");
+        glUniformMatrix4fv(model_location, 1, GL_FALSE, &shape.ctm[0][0]);
+
+        // Draw Command
+        switch(shape.primitive.type) {
+        case PrimitiveType::PRIMITIVE_CONE:
+            glDrawArrays(GL_TRIANGLES, 0, m_coneDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_CYLINDER:
+            glDrawArrays(GL_TRIANGLES, 0, m_cylinderDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_SPHERE:
+            glDrawArrays(GL_TRIANGLES, 0, m_sphereDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_CUBE:
+            glDrawArrays(GL_TRIANGLES, 0, m_cubeDataSize / 6);
+            break;
+        case PrimitiveType::PRIMITIVE_MESH:
+            glDrawArrays(GL_TRIANGLES, 0, m_meshDataSize / 6);
+            break;
+        }
+
+        // Unbind Vertex Array
+        glBindVertexArray(0);
+    }
+
+    glUseProgram(0);
+    // Bind the default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+    glViewport(0, 0, m_screen_width, m_screen_height);
+
+    // Clear the color and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Realtime::renderScene(){
@@ -242,7 +324,7 @@ void Realtime::renderScene(){
             glUniform1f(light_angle_location, renderData.lights[i].angle);
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, settings.nearPlane, settings.farPlane);
+            lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, settings.nearPlane, settings.farPlane);
             lightView = setupLightViewMatrix(renderData.lights[i].pos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
             GLuint light_space_matrix = glGetUniformLocation(m_shader, "lightSpacemat");
@@ -296,39 +378,13 @@ void Realtime::renderScene(){
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
-    if (settings.extraCredit3) {
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, m_shadow_width, m_shadow_height);
-        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-        glClear(GL_DEPTH_BUFFER_BIT);
-
-        bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
-        bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
-        bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
-        bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
-
-        renderScene();
-
-        // Bind the default framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
-        glViewport(0, 0, m_screen_width, m_screen_height);
-
-        // Clear the color and depth buffers
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        paintShadow(settings.nearPlane, settings.farPlane);
-        glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
-    }
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    paintShadow(settings.nearPlane, settings.farPlane);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glViewport(0, 0, m_fbo_width, m_fbo_height);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
-    bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
-    bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
-    bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
 
     renderScene();
 
