@@ -87,8 +87,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/default.vert
         resources/shaders/texture.frag
         resources/shaders/texture.vert
-        resources/shaders/debug_quad.frag
-        resources/shaders/debug_quad.vert
+
+
         resources/shaders/simple_depth.frag
         resources/shaders/simple_depth.vert
 )

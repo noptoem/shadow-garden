@@ -9,6 +9,10 @@
 #include "utils/sceneparser.h"
 #include "utils/shaderloader.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 
 // ================== Project 5: Lights, Camera
 
@@ -90,7 +94,6 @@ void Realtime::initializeGL() {
 
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/default.vert", ":/resources/shaders/default.frag");
     m_texture_shader = ShaderLoader::createShaderProgram(":/resources/shaders/texture.vert", ":/resources/shaders/texture.frag");
-    // m_debug_shader = ShaderLoader::createShaderProgram(":/resources/shaders/debug_quad.vert", ":/resources/shaders/debug_quad.frag");
     m_shadow_shader = ShaderLoader::createShaderProgram(":/resources/shaders/simple_depth.vert", ":/resources/shaders/simple_depth.frag");
 
     initializeV(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
@@ -99,7 +102,6 @@ void Realtime::initializeGL() {
     initializeV(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
     glGenBuffers(1, &m_mesh_vbo);
     glGenVertexArrays(1, &m_mesh_vao);
-    makeDepthMap();
 
     glUseProgram(m_texture_shader);
     GLuint texture_location = glGetUniformLocation(m_texture_shader, "texture_id");
@@ -152,6 +154,7 @@ void Realtime::initializeGL() {
     glBindVertexArray(0);
 
     makeFBO();
+    makeDepthMap();
 }
 
 void Realtime::renderScene(){
@@ -237,6 +240,13 @@ void Realtime::renderScene(){
             glUniform1f(light_penumbra_location, renderData.lights[i].penumbra);
             GLuint light_angle_location = glGetUniformLocation(m_shader, ("light_angle[" + std::to_string(i) + "]").c_str());
             glUniform1f(light_angle_location, renderData.lights[i].angle);
+            glm::mat4 lightProjection, lightView;
+            glm::mat4 lightSpaceMatrix;
+            lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, settings.nearPlane, settings.farPlane);
+            lightView = setupLightViewMatrix(renderData.lights[i].pos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+            lightSpaceMatrix = lightProjection * lightView;
+            GLuint light_space_matrix = glGetUniformLocation(m_shader, "lightSpacemat");
+            glUniformMatrix4fv(light_space_matrix, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
         }
 
         // diffuse
@@ -286,11 +296,28 @@ void Realtime::renderScene(){
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
-    glViewport(0, 0, m_shadow_width, m_shadow_height);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    paintShadow(settings.nearPlane, settings.farPlane);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (settings.extraCredit3) {
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, m_shadow_width, m_shadow_height);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
+        bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
+        bind(m_cube_vao, m_cube_vbo, PrimitiveType::PRIMITIVE_CUBE);
+        bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
+
+        renderScene();
+
+        // Bind the default framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+        glViewport(0, 0, m_screen_width, m_screen_height);
+
+        // Clear the color and depth buffers
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        paintShadow(settings.nearPlane, settings.farPlane);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+    }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
@@ -304,7 +331,6 @@ void Realtime::paintGL() {
     bind(m_cylinder_vao, m_cylinder_vbo, PrimitiveType::PRIMITIVE_CYLINDER);
 
     renderScene();
-    // FBO
 
     // Bind the default framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
@@ -314,7 +340,8 @@ void Realtime::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Call paintTexture to draw our FBO color attachment texture | Task 31: Set bool parameter to true
-    paintTexture(m_fbo_texture, depthMap, settings.perPixelFilter, settings.kernelBasedFilter, settings.extraCredit1, settings.extraCredit2);
+    paintTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter,
+                 settings.extraCredit1, settings.extraCredit2);
 }
 
 void Realtime::resizeGL(int w, int h) {

@@ -15,10 +15,11 @@ uniform mat3 model_matrix_transpose_inverse;
 // view and projection matrix
 uniform mat4 view_matrix;
 uniform mat4 proj_matrix;
+uniform mat4 lightSpacemat;
 
 void main() {
     world_space_pos =  model_matrix * vec4(pos, 1);
     world_space_normal = model_matrix_transpose_inverse * normal;
-    fragLight = vec4(pos, 1);
+    fragLight = lightSpacemat * model_matrix * world_space_pos;
     gl_Position = proj_matrix * view_matrix * world_space_pos;
 }

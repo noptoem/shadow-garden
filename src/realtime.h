@@ -48,10 +48,11 @@ private:
     void setupViewMatrix();
     void setupProjMatrix();
     void setTime();
-    void paintTexture(GLuint texture, GLuint shadowMap, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
+    void paintTexture(GLuint texture, bool perPixel, bool kernelBased, bool grayScale, bool sharphen);
     void makeFBO();
     void makeDepthMap();
     void renderScene();
+    glm::mat4 setupLightViewMatrix(glm::vec3 pos, glm::vec3 look, glm::vec3 up);
     void paintShadow(float near_plane, float far_plane);
     bool loadOBJ(
         const char * path,
@@ -134,6 +135,5 @@ private:
     const unsigned int m_shadow_height = 1024;
     GLuint depthMapFBO;
     GLuint depthMap;
-
 };
 
