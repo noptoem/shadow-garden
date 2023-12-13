@@ -31,8 +31,12 @@ void Realtime::setupViewMatrix() {
     m_view_inverse = glm::inverse(m_view);
 }
 
-glm::mat4 Realtime::setupLightViewMatrix(glm::vec3 pos, glm::vec3 look, glm::vec3 up) {
+glm::mat4 Realtime::setupLightViewMatrix() {
     // generate view matrix
+    glm::vec3 pos = renderData.cameraData.pos;
+    glm::vec3 up = renderData.cameraData.up;
+    glm::vec3 look = renderData.cameraData.look;
+
     glm::mat4 m_translate = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -pos[0], -pos[1], -pos[2], 1);
     glm::mat4 m_rotate = glm::mat4(1);
 
@@ -68,4 +72,21 @@ void Realtime::setupProjMatrix() {
                                   0, 0, -c/(1+c), 0);
 
     m_proj = remap * unhinge * scale;
+}
+
+glm::mat4 Realtime::setupLightProjMatrix() {
+    glm::mat4 remap = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -2, 0, 0, 0, -1, 1);
+    glm::mat4 scale = glm::mat4(1);
+    scale[0][0] = 1/ (aspectRatio * settings.farPlane * tan(renderData.cameraData.heightAngle/ 2));
+    scale[1][1] = 1/ (settings.farPlane * tan(renderData.cameraData.heightAngle/ 2));
+    scale[2][2] = 1/ settings.farPlane;
+
+    float c = -settings.nearPlane / settings.farPlane;
+    // switch side (matrix)
+    glm::mat4 unhinge = glm::mat4(1, 0, 0, 0,
+                                  0, 1, 0, 0,
+                                  0, 0, 1/(1+c), -1,
+                                  0, 0, -c/(1+c), 0);
+
+    return remap * unhinge * scale;
 }

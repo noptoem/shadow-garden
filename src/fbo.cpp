@@ -65,7 +65,7 @@ void Realtime::makeDepthMap(){
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, depthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_shadow_width, m_shadow_height, 0,
-                 GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+                 GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -79,6 +79,5 @@ void Realtime::makeDepthMap(){
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
 
-    glBindTexture(GL_TEXTURE_2D, 0); // Ending
     glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
 }

@@ -48,7 +48,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float shadow = currentDepth <= closestDepth ? 1.0 : 0.2;
+    float shadow = currentDepth < closestDepth ? 0.7 : 0.0;
 
     return shadow;
 }
@@ -68,8 +68,7 @@ void main() {
         float specular, diffuse;
         float shadow = (shadowEnabled) ? ShadowCalculation(fragLight) : 0.0;
 
-        switch(light_type[i]) {
-        case 0:
+        if (light_type[i] == 0) {
             diffuse = max(dot(normalize(-light_dir[i]), normal), 0.f) * (1.0 - shadow);
             if (shininess != 0) {
                 specular = pow(max(dot(vec4(reflect(normalize(light_dir[i]), normal), 0.f), normalize(camera_pos - world_space_pos)), 0.f), shininess) * (1.0 - shadow);
@@ -85,7 +84,7 @@ void main() {
                 fragColor[j] += ks * specular * light_color[i][j] * cSpecular[j];
             }
             break;
-        case 1:
+        } else if (light_type[i] == 1) {
             diffuse = max(0.f, dot(normal, L));
             if (shininess != 0) {
                 specular = pow(max(0.f, dot(R, normalize(vec3(camera_pos) - vec3(world_space_pos)))), shininess);
@@ -99,7 +98,7 @@ void main() {
                 fragColor[j] += attentuate * ks * specular * light_color[i][j] * cSpecular[j];
             }
             break;
-        case 2:
+        } else if (light_type[i] == 2) {
             vec3 light_to_pos = light_pos[i] - vec3(world_space_pos);
             float angle = acos(length(dot(light_to_pos, vec3(light_dir[i])) * vec3(light_dir[i])) / length(light_to_pos) / pow(length(light_dir[i]), 2));
             diffuse = max(0.f, dot(normal, L));

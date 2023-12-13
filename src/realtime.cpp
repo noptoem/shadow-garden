@@ -158,18 +158,11 @@ void Realtime::initializeGL() {
 }
 
 void Realtime::paintShadow(float near_plane, float far_plane) {
-    glUseProgram(m_shadow_shader);
+    if (renderData.lights.size() == 0) {
+        return;
+    }
 
-    glm::mat4 lightProjection, lightView;
-    glm::mat4 lightSpaceMatrix;
-    lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
-    // SceneLightData light = renderData.lights.at(0);
-    glm::vec3 new_dir = glm::vec3(-2.0f, 4.0f, -1.0f);
-    lightView = setupLightViewMatrix(new_dir, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-    lightSpaceMatrix = lightProjection * lightView;
-    GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
-    glm::mat4 zeroMat = glm::mat4(0);
-    glUniformMatrix4fv(shader_location, 1, GL_FALSE, &zeroMat[0][0]);
+    glUseProgram(m_shadow_shader);
 
     glViewport(0, 0, m_shadow_width, m_shadow_height);
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -203,6 +196,14 @@ void Realtime::paintShadow(float near_plane, float far_plane) {
             break;
         }
 
+        glm::mat4 lightProjection, lightView;
+        glm::mat4 lightSpaceMatrix;
+        lightProjection = setupLightProjMatrix();
+        // SceneLightData light = renderData.lights.at(0);
+        lightView = setupLightViewMatrix();
+        lightSpaceMatrix = lightProjection * lightView;
+        GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
+        glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
         GLuint model_location = glGetUniformLocation(m_shadow_shader, "model");
         glUniformMatrix4fv(model_location, 1, GL_FALSE, &shape.ctm[0][0]);
 
