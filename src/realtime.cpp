@@ -106,11 +106,7 @@ void Realtime::initializeGL() {
 
     glUseProgram(m_texture_shader);
     GLuint texture_location = glGetUniformLocation(m_texture_shader, "texture_id");
-    glUniform1i(texture_location, static_cast<int>(0));
-
-    glUseProgram(m_shader);
-    GLuint shad_location = glGetUniformLocation(m_shader, "shadowMap");
-    glUniform1i(shad_location, static_cast<int>(1));
+    glUniform1i(texture_location, 0);
     glUseProgram(0);
 
     std::vector<GLfloat> fullscreen_quad_data =
@@ -155,6 +151,11 @@ void Realtime::initializeGL() {
 
     makeDepthMap();
     makeFBO();
+
+    glUseProgram(m_shader);
+    GLuint shad_location = glGetUniformLocation(m_shader, "shadowMap");
+    glUniform1i(shad_location, 1);
+    glUseProgram(0);
 }
 
 void Realtime::paintShadow(float near_plane, float far_plane) {
@@ -163,10 +164,6 @@ void Realtime::paintShadow(float near_plane, float far_plane) {
     }
 
     glUseProgram(m_shadow_shader);
-
-    glViewport(0, 0, m_shadow_width, m_shadow_height);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glClear(GL_DEPTH_BUFFER_BIT);
 
     bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
     bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
@@ -198,9 +195,9 @@ void Realtime::paintShadow(float near_plane, float far_plane) {
 
         glm::mat4 lightProjection, lightView;
         glm::mat4 lightSpaceMatrix;
-        lightProjection = setupLightProjMatrix();
+        lightProjection = glm::ortho(-1000.f, 1000.f, -1000.f, 1000.f, 0.f, 1000.f);
         // SceneLightData light = renderData.lights.at(0);
-        lightView = setupLightViewMatrix();
+        lightView = glm::lookAt(100.f * glm::vec3(renderData.lights.at(0).dir), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
         lightSpaceMatrix = lightProjection * lightView;
         GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
         glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
@@ -314,6 +311,19 @@ void Realtime::renderScene(){
                 break;
             }
 
+            if (renderData.lights[i].type == LightType::LIGHT_DIRECTIONAL) {
+                glm::mat4 lightProjection, lightView;
+                glm::mat4 lightSpaceMatrix;
+                lightProjection = glm::ortho(-1000.f, 1000.f, -1000.f, 1000.f, 0.f, 1000.f);
+                // SceneLightData light = renderData.lights.at(0);
+                lightView = glm::lookAt(100.f * glm::vec3(renderData.lights.at(0).dir), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
+                lightSpaceMatrix = lightProjection * lightView;
+                GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
+                glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+                GLuint model_location = glGetUniformLocation(m_shadow_shader, "model");
+                glUniformMatrix4fv(model_location, 1, GL_FALSE, &shape.ctm[0][0]);
+            }
+
             GLuint light_function_location = glGetUniformLocation(m_shader, ("light_function[" + std::to_string(i) + "]").c_str());
             glUniform3fv(light_function_location, 1, &renderData.lights[i].function[0]);
             GLuint light_pos_location = glGetUniformLocation(m_shader, ("light_pos[" + std::to_string(i) + "]").c_str());
@@ -324,7 +334,7 @@ void Realtime::renderScene(){
             glUniform1f(light_angle_location, renderData.lights[i].angle);
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            lightProjection = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, settings.nearPlane, settings.farPlane);
+            lightProjection = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, 0.f, 1000.f);
             lightView = glm::lookAt(glm::vec3(renderData.lights[i].dir), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
             GLuint light_space_matrix = glGetUniformLocation(m_shader, "lightSpacemat");
@@ -349,6 +359,8 @@ void Realtime::renderScene(){
         glm::vec4 camera_pos = m_view_inverse * glm::vec4(glm::vec3(0.f), 1.f);
         GLuint camera_pos_location = glGetUniformLocation(m_shader, "camera_pos");
         glUniform4fv(camera_pos_location, 1, &camera_pos[0]);
+
+        glActiveTexture(GL_TEXTURE1);
 
         // Draw Command
         switch(shape.primitive.type) {
@@ -378,15 +390,17 @@ void Realtime::renderScene(){
 
 void Realtime::paintGL() {
     // Students: anything requiring OpenGL calls every frame should be done here
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    // Render the shadow scene
+    glViewport(0, 0, m_shadow_width, m_shadow_height);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
     paintShadow(settings.nearPlane, settings.farPlane);
+
+    // Render the normal scene
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glViewport(0, 0, m_fbo_width, m_fbo_height);
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, depthMap);
     renderScene();
 

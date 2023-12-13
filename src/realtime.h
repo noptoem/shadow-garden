@@ -52,8 +52,6 @@ private:
     void makeFBO();
     void makeDepthMap();
     void renderScene();
-    glm::mat4 setupLightViewMatrix();
-    glm::mat4 setupLightProjMatrix();
     void paintShadow(float near_plane, float far_plane);
     bool loadOBJ(
         const char * path,

@@ -2,5 +2,5 @@
 
 void main()
 {
-    gl_FragDepth = 0;
+    // gl_FragDepth = 0;
 }
