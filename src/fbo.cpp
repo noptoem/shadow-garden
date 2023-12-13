@@ -24,8 +24,6 @@ void Realtime::paintTexture(GLuint texture, bool perPixel, bool kernelBased, boo
     glBindVertexArray(m_fullscreen_vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindTexture(GL_TEXTURE_2D, 0);

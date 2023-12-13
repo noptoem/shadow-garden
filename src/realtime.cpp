@@ -110,7 +110,7 @@ void Realtime::initializeGL() {
 
     glUseProgram(m_shader);
     GLuint shad_location = glGetUniformLocation(m_shader, "shadowMap");
-    glUniform1i(shad_location, 1);
+    glUniform1i(shad_location, static_cast<int>(1));
     glUseProgram(0);
 
     std::vector<GLfloat> fullscreen_quad_data =
@@ -162,19 +162,18 @@ void Realtime::paintShadow(float near_plane, float far_plane) {
 
     glm::mat4 lightProjection, lightView;
     glm::mat4 lightSpaceMatrix;
-    lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, near_plane, far_plane);
     // SceneLightData light = renderData.lights.at(0);
     glm::vec3 new_dir = glm::vec3(-2.0f, 4.0f, -1.0f);
     lightView = setupLightViewMatrix(new_dir, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
     lightSpaceMatrix = lightProjection * lightView;
     GLuint shader_location = glGetUniformLocation(m_shadow_shader, "lightSpaceMatrix");
-    glUniformMatrix4fv(shader_location, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
+    glm::mat4 zeroMat = glm::mat4(0);
+    glUniformMatrix4fv(shader_location, 1, GL_FALSE, &zeroMat[0][0]);
 
     glViewport(0, 0, m_shadow_width, m_shadow_height);
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
 
     bind(m_sphere_vao, m_sphere_vbo, PrimitiveType::PRIMITIVE_SPHERE);
     bind(m_cone_vao, m_cone_vbo, PrimitiveType::PRIMITIVE_CONE);
@@ -324,8 +323,8 @@ void Realtime::renderScene(){
             glUniform1f(light_angle_location, renderData.lights[i].angle);
             glm::mat4 lightProjection, lightView;
             glm::mat4 lightSpaceMatrix;
-            lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, settings.nearPlane, settings.farPlane);
-            lightView = setupLightViewMatrix(renderData.lights[i].pos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+            lightProjection = glm::ortho(-1000.0f, 1000.0f, -1000.0f, 1000.0f, settings.nearPlane, settings.farPlane);
+            lightView = glm::lookAt(glm::vec3(renderData.lights[i].dir), glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
             lightSpaceMatrix = lightProjection * lightView;
             GLuint light_space_matrix = glGetUniformLocation(m_shader, "lightSpacemat");
             glUniformMatrix4fv(light_space_matrix, 1, GL_FALSE, &lightSpaceMatrix[0][0]);
@@ -386,6 +385,8 @@ void Realtime::paintGL() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
     renderScene();
 
     // Bind the default framebuffer

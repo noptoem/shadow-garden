@@ -48,7 +48,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float shadow = currentDepth >= closestDepth ? 1.0 : 0.0;
+    float shadow = currentDepth <= closestDepth ? 1.0 : 0.2;
 
     return shadow;
 }
