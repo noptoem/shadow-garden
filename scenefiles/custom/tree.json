@@ -26,7 +26,7 @@
         "groups": [
           {
             "translate": [0.0, -0.6, 0.0],
-            "scale": [6.0, 0.1, 6.0],
+            "scale": [6.0, 0.2, 6.0],
             "primitives": [
               {
                 "type": "cube",
@@ -43,6 +43,65 @@
                 "type": "mesh",
                 "diffuse": [0.0, 1.0, 0.0],
                 "meshFile": "custom/tree.obj"
+              }
+            ]
+          },
+          {
+            "translate": [1, -0.5, 1.5],
+            "scale": [2, 0.7, 2],
+            "primitives": [
+              {
+                "type": "mesh",
+                "diffuse": [1.0, 1.0, 1.0],
+                "meshFile": "custom/RockPackByPava.obj"
+              }
+            ]
+          },
+          {
+            "translate": [-2, -0.7, -1.5],
+            "rotate": [1, 1, 0, 90],
+            "scale": [1, 0.7, 0.7],
+            "primitives": [
+              {
+                "type": "mesh",
+                "diffuse": [1.0, 1.0, 1.0],
+                "meshFile": "custom/RockPackByPava.obj"
+              }
+            ]
+          },
+          {
+            "translate": [1.5, -0.7, -1.5],
+            "rotate": [0, 1, 0, 90],
+            "scale": [0.7, 0.8, 1.2],
+            "primitives": [
+              {
+                "type": "mesh",
+                "diffuse": [1.0, 1.0, 1.0],
+                "meshFile": "custom/RockPackByPava.obj"
+              }
+            ]
+          },
+          {
+            "translate": [-1.5, -0.7, 1.5],
+            "rotate": [0, 1, 0, 180],
+            "scale": [0.7, 2, 1.2],
+            "primitives": [
+              {
+                "type": "mesh",
+                "diffuse": [1.0, 1.0, 1.0],
+                "meshFile": "custom/RockPackByPava.obj"
+              }
+            ]
+          },
+          {
+            "translate": [-1, -0.7, -1],
+            "rotate": [0, 0, 1, 135],
+            "scale": [0.5, 1, 2],
+            "primitives": [
+              {
+                "type": "mesh",
+                "diffuse": [1.0, 1.0, 1.0],
+                "meshFile": "custom/RockPackByPava.obj"
               }
             ]
           }

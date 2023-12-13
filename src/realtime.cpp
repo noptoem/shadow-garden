@@ -360,8 +360,6 @@ void Realtime::renderScene(){
         GLuint camera_pos_location = glGetUniformLocation(m_shader, "camera_pos");
         glUniform4fv(camera_pos_location, 1, &camera_pos[0]);
 
-        glActiveTexture(GL_TEXTURE1);
-
         // Draw Command
         switch(shape.primitive.type) {
         case PrimitiveType::PRIMITIVE_CONE:
