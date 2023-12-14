@@ -1,32 +1,42 @@
-<<<<<<< HEAD
-# shadow-garden
-CSCI 1230 Final Projects 
+# shadow-garden CSCI 1230 Final Project
 
-## First Check-in
+## README
 
-- A high-level **overview** of the flow of your final program:
-Our idea is including the shadow mapping for the realtime pipeline, which will focus only in the directional lights. 
+A high-level **overview** of the flow of your final program:
 
-As we learn about the idea of shadow mapping in the OpenGL, we learn that the concept is as follow:
+Our program consists of three new functionality for the OpenGL realtime scene rendering:
 
-We render the scene from the light's point of view and everything we see from the light's perspective is lit and everything we can't see must be in shadow. Imagine a floor section with a large box between itself and a light source. Since the light source will see this box and not the floor section when looking in its direction that specific floor section should be in shadow.
+1. New Scenefiles with Meshes inclusion:
+Apart from getting the new mesh files as a scenefiles, we implement new approach to parse the mesh files due to the difference of the mesh file format of the external files.
 
-Shadow mapping therefore consists of two passes: first we render the depth map, and in the second pass we render the scene as normal and use the generated depth map to calculate whether fragments are in shadow. It may sound a bit complicated, but as soon as we walk through the technique step-by-step it'll likely start to make sense.
+2. Light Position/Direction Changes based on time:
+We simply use the same idea as the mouse movement, which is converting the light direction into some angle. Then, we make the time scale to determine the angle from the plane (in our case, we decide to use 24 hours as a basis). For the automatic, we use the time notion for changing the angle.
 
-With this idea, we have three main portions of the work:
+3. Shadow Mapping:
+Our idea is including the shadow mapping for the realtime pipeline, which will focus only in the directional lights. As we learn about the idea of shadow mapping in the OpenGL, we learn that the concept is as follow:
+
+- Rendering the "depthMap" from the light's point of view (everything the light cannot see is the shadow) as the first pass
+- Rendering the normal scene from the camera's point of view (normal scene rendering) as the second pass
+
+With this idea, we have three main portions of this work:
 1. Creating the depth map :  The depth map is the depth texture as rendered from the light's perspective that we'll be using for testing for shadows.
 2. Light Space Transform and Rendering to depth map : Simply settings the light view based on the view matrix and projection matrix. Then, convert them into the depth map using the shaders. 
 3. Grouping everything into Shadow Mapping : Operates everything on the fragment shaders to get the correct light based on the position.
-- **Division of labor** and a rough **plan of action**
-    - **Naphat** : Creating the depth map, and cooperate in Shadow Mapping. The plan is following the idea in the Shadow Mapping website, cooperating with the result in the Action assignment. If this part is not finished, we may using some other specific to shape or static depth map to display
-    - **Nop** : Light Space Transform and Rendering to depth map and cooperate in Shadow Mapping. The idea is using the idea of converting the view and projection matrix from the Lights assignment to work on the lights, then using the depth map to cast the constant. If this part is not finished, we could create a simpler scene that doesn't require much of the shift in view and projection matrix to work
-    - **Treetased** : Mainly work on the Shadow Mapping in terms of the cooperation with the code. The idea is laying down the backbone of the shadow algorithms based on the website in shadow mapping, then trying to find where the depth map and light space transformation could come into the place. If this process is unfinished, we could also make a more simple scene that ignore some notions or edge cases of the shapes.
-- A description of **how each feature will be implemented** + any **resources** that you think might come in handy (e.g. papers, tutorials, algorithms, data)
+
+**Functionality in the code**:
+1. To activate the new meshes, simply importing the new mesh file into the GUI in the Action assignment
+2. To activate the Light position:
+- Move the slider saying the "time" around. The number represents the time in the day (0.00 - 24.00)
+- To automate this process, click "day-night cycle" to make this process works
+3. To activate the Shadow Mapping, click the button "Shadow-Enabled" to make it.
+  
+**Division of labor** and a rough **plan of action**
+    - **Naphat** : Working on the Shadow Mapping
+    - **Nop** : Working on the Light Position/Direction Changes based on time
+    - **Treetased** : New Scenefiles with Meshes inclusion
+    
+A description of **how each feature will be implemented** + any **resources** that you think might come in handy (e.g. papers, tutorials, algorithms, data)
 	- https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping (For the Shadow Mapping)
 	- Assignment 5 and 6 in terms of GL Pipeline
-	- OpenGL Documentations
-=======
-# Projects 5 & 6: Lights, Camera & Action!
-
-All project handouts can be found [here](https://cs1230.graphics/projects).
->>>>>>> f0d5f9b67fe8a389e936c08eac501511b13da717
+	- OpenGL Documentation
+ 	- EdStem
